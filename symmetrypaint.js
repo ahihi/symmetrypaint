@@ -10,46 +10,111 @@ $(function() {
     var height = canvas.attr("height");
     var ctx = canvas[0].getContext("2d");
     
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, width, height);
+    function clear() {
+        ctx.fillStyle = colorValue(!color);
+        ctx.fillRect(0, 0, width, height);
+        setColor(color);
+    }
+    
+    function sym_2_mirror_h(x, y) {
+        return [
+            {x: x, y: y},
+            {x: width-x, y: y}
+        ];
+    }
+        
+    function sym_2_mirror_v(x, y) {
+        return [
+            {x: x, y: y},
+            {x: x, y: height-y}
+        ];
+    }
+        
+    function sym_2_rotate(x, y) {
+        return [
+            {x: x, y: y},
+            {x: width-x, y: height-y}
+        ]
+    }
+    
+    function sym_4_rotate(x, y) {
+        var tx = y;
+        var ty = width-x;
+        return [
+            {x: x, y: y},
+            {x: width-x, y: height-y},
+            {x: tx, y: ty},
+            {x: width-tx, y: height-ty}
+        ]
+    }
+    
+    var symmetries = [
+        {name: "2-Mirror Horizontal", func: sym_2_mirror_h, image: "2-mirror-h"},
+        {name: "2-Mirror Vertical", func: sym_2_mirror_v, image: "2-mirror-v"},
+        {name: "2-Rotate", func: sym_2_rotate, image: "2-rotate"},
+        {name: "4-Rotate", func: sym_4_rotate, image: "4-rotate"}
+    ];
+    var symmetry;
+    function setSymmetry(i) {
+        symmetry = symmetries[i].func;
+    }
+    setSymmetry(0);
     
     var color;
+    function colorValue(col) {
+        return col ? "#000000" : "#FFFFFF";
+    }
     function setColor(col) {
         color = col;
-        var colorVal = color ? "#000000" : "#FFFFFF";
+        var colorVal = colorValue(color);
         ctx.fillStyle = colorVal;
         ctx.strokeStyle = colorVal;
     };
     setColor(true);
+    clear();
     
     var drawing = false;
     var lastX;
     var lastY;
     function drawTo(x, y) {
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.arc(x, y, lineWidth/2.0, 0, 2*Math.PI);
-        ctx.fill();
+        var lasts = symmetry(lastX, lastY);
+        var currs = symmetry(x, y);
         
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineWidth = lineWidth;
-        ctx.lineTo(x, y);
-        ctx.stroke();
+        for(var i = 0; i < lasts.length; i++) {
+            var last = lasts[i];
+            var curr = currs[i];
+            
+            ctx.beginPath();
+            ctx.moveTo(last.x, last.y);
+            ctx.arc(curr.x, curr.y, lineWidth/2.0, 0, 2*Math.PI);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(last.x, last.y);
+            ctx.lineWidth = lineWidth;
+            ctx.lineTo(curr.x, curr.y);
+            ctx.stroke();
+        }
         
         lastX = x;
         lastY = y;        
     }
+    function eventX(e) {
+        return e.offsetX != undefined ? e.offsetX : e.layerX;
+    }
+    function eventY(e) {
+        return e.offsetY != undefined ? e.offsetY : e.layerY;
+    }
     canvas.mousedown(function(e) {
         drawing = true;
-        lastX = e.offsetX;
-        lastY = e.offsetY;
-        drawTo(e.offsetX, e.offsetY)
+        lastX = eventX(e);
+        lastY = eventY(e);
+        drawTo(eventX(e), eventY(e))
         e.preventDefault();
     });
     canvas.mousemove(function(e) {
         if(drawing) {
-            drawTo(e.offsetX, e.offsetY);
+            drawTo(eventX(e), eventY(e));
         }
     });
     canvas.mouseup(function(e) {
@@ -57,6 +122,44 @@ $(function() {
     })
     
     var menu = $('<div id="menu">');
+    
+    var symmetrySection = $('<section id="symmetry-section">');
+    {
+        symmetrySection.append($("<h1>Symmetry:</h1>"));
+        
+        symmetryList = $("<ul>");
+        for(var i = 0; i < symmetries.length; i++) {
+            var sym = symmetries[i];
+            var li = $("<li>");
+            {
+                var id = "symmetry-" + i;
+                
+                var symRadio = $('<input type="radio" name="symmetry">');
+                symRadio.attr("id", id);
+                symRadio.attr("value", i);
+                if(i == 0) {
+                    symRadio.attr("checked", "checked");
+                }
+                (function(j) {
+                    symRadio.click(function() {
+                        setSymmetry(j);
+                    });
+                })(i);
+                li.append(symRadio);
+                
+                var symLabel = $('<label>');
+                symLabel.attr("for", id);
+                symLabel.text(sym.name);
+                var symImg = $("<img>");
+                symImg.attr("src", sym.image + ".png");
+                symLabel.prepend(symImg);
+                li.append(symLabel);
+            }
+            symmetryList.append(li);
+        }
+        symmetrySection.append(symmetryList);
+    }
+    menu.append(symmetrySection);
     
     var lineWidth = LINE_WIDTH_MIN;
     var lineWidthSection = $('<section id="line-width-section">');
@@ -117,6 +220,16 @@ $(function() {
         colorSection.append(colorList);
     }
     menu.append(colorSection);
+    
+    var clearSection = $('<section id="clear-section">');
+    {
+        var clearButton = $("<button>Clear</button>");
+        clearButton.click(function() {
+            clear();
+        });
+        clearSection.append(clearButton);
+    }
+    menu.append(clearSection);
     
     var body = $("body");
     body.append(canvas);

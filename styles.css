@@ -37,6 +37,18 @@ body {
     font-weight: normal;
 }
 
-#menu > section#color-section > ul > li > label {
+#menu > section > ul > li > label {
     padding-left: 4px;
+}
+
+#menu > section#line-width-section > input[type=range] {
+    width: 256px;
+}
+
+#menu > section#symmetry-section > ul > li > label > img {
+    margin-right: 4px;
+}
+
+#menu > section#clear-section > button {
+    padding: 8px;
 }
