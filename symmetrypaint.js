@@ -117,7 +117,7 @@ $(function() {
             drawTo(eventX(e), eventY(e));
         }
     });
-    canvas.mouseup(function(e) {
+    $(window).mouseup(function(e) {
         drawing = false;
     })
     
@@ -182,7 +182,7 @@ $(function() {
             lineWidthHeading.text("Line width: " + lineWidth);
         }
         lineWidthCtl.change(function(e) {
-            updateLineWidth()
+            updateLineWidth();
         });
         updateLineWidth();
         
