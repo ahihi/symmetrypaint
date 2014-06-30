@@ -1,3 +1,104 @@
+function eventX(e) {
+    return e.offsetX != undefined ? e.offsetX : e.layerX;
+}
+
+function eventY(e) {
+    return e.offsetY != undefined ? e.offsetY : e.layerY;
+}
+
+function setColor(ctx, color) {
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+}
+
+function slider(min, max, defaultValue, onUpdate) {
+    var container = $('<div class="slider">');
+
+    var field = $('<input type="number">');
+    field.attr("min", min);
+    field.attr("max", max);
+    container.append(field);
+    
+    var slider = $('<input type="range">');
+    slider.attr("min", min);
+    slider.attr("max", max);
+    container.append(slider);
+            
+    var sliderObj = {
+        "container": container,
+        "slider": slider,
+        "field": field,
+        "value": undefined,
+        "default": defaultValue
+    };
+                                                            
+    var updateValue = function(value) {
+        sliderObj.value = value;
+        slider.attr("value", value);
+        field.attr("value", value);
+        if(onUpdate) {
+            onUpdate(value);
+        }
+    };
+    updateValue(defaultValue);
+
+    slider.on("input change", function(e) {
+        var value = slider.attr("value");
+        updateValue(value);
+    });
+    
+    field.on("input change", function(e) {
+        var value = field.attr("value");
+        updateValue(value);
+    });
+    
+    return sliderObj;
+}
+
+function rgbSliders(ctx) {
+    var container = $('<div class="sliders">');
+
+    var slidersObj = {
+        "container": container,
+        "value": {},
+        "cssColor": undefined
+    };
+    
+    var colorBox = $('<div class="colorbox">');
+    container.append(colorBox);
+    
+    var ranges = $('<div class="ranges">');
+    {
+        var components = ["red", "green", "blue"];
+        for(var i = 0; i < components.length; i++) {
+            var component = components[i];
+
+            slidersObj.value[component] = undefined;
+            var updateComponent = function(comp) {
+                return function(value) {
+                    var rgb = slidersObj.value
+                    rgb[comp] = value;
+                
+                    var color = "rgb("
+                              + components.map(function(c) { return rgb[c] }).join(", ")
+                              + ")";
+                    colorBox.css("background-color", color);
+                    
+                    if(ctx) {
+                        setColor(ctx, color);
+                    }
+                };
+            }(component);
+
+            slidersObj[component] = slider(0, 255, 0, updateComponent);
+            ranges.append(slidersObj[component].container);
+        }
+    }
+    container.append(ranges);
+        
+    return slidersObj;
+}
+
 $(function() {
     var CANVAS_SIZE = 512;
     var LINE_WIDTH_MIN = 1;
@@ -10,11 +111,12 @@ $(function() {
     var height = canvas.attr("height");
     var ctx = canvas[0].getContext("2d");
     
-    function clear() {
-        ctx.fillStyle = colorValue(!color);
+    function fill() {
         ctx.fillRect(0, 0, width, height);
-        setColor(color);
     }
+    
+    setColor(ctx, "#FFFFFF");
+    fill();
     
     function sym_2_mirror_h(x, y) {
         return [
@@ -28,6 +130,13 @@ $(function() {
             {x: x, y: y},
             {x: x, y: height-y}
         ];
+    }
+    
+    function sym_4_mirror(x, y) {
+        var xs = sym_2_mirror_h(x, y);
+        return [].concat.apply([], xs.map(function(p) {
+            return sym_2_mirror_v(p.x, p.y);
+        }));
     }
         
     function sym_2_rotate(x, y) {
@@ -51,6 +160,7 @@ $(function() {
     var symmetries = [
         {name: "2-Mirror Horizontal", func: sym_2_mirror_h, image: "2-mirror-h"},
         {name: "2-Mirror Vertical", func: sym_2_mirror_v, image: "2-mirror-v"},
+        {name: "4-Mirror", func: sym_4_mirror, image: "4-mirror"},
         {name: "2-Rotate", func: sym_2_rotate, image: "2-rotate"},
         {name: "4-Rotate", func: sym_4_rotate, image: "4-rotate"}
     ];
@@ -59,20 +169,7 @@ $(function() {
         symmetry = symmetries[i].func;
     }
     setSymmetry(0);
-    
-    var color;
-    function colorValue(col) {
-        return col ? "#000000" : "#FFFFFF";
-    }
-    function setColor(col) {
-        color = col;
-        var colorVal = colorValue(color);
-        ctx.fillStyle = colorVal;
-        ctx.strokeStyle = colorVal;
-    };
-    setColor(true);
-    clear();
-    
+        
     var drawing = false;
     var lastX;
     var lastY;
@@ -86,24 +183,18 @@ $(function() {
             
             ctx.beginPath();
             ctx.moveTo(last.x, last.y);
-            ctx.arc(curr.x, curr.y, lineWidth/2.0, 0, 2*Math.PI);
+            ctx.arc(curr.x, curr.y, lineWidthSlider.value/2.0, 0, 2*Math.PI);
             ctx.fill();
 
             ctx.beginPath();
             ctx.moveTo(last.x, last.y);
-            ctx.lineWidth = lineWidth;
+            ctx.lineWidth = lineWidthSlider.value;
             ctx.lineTo(curr.x, curr.y);
             ctx.stroke();
         }
         
         lastX = x;
         lastY = y;        
-    }
-    function eventX(e) {
-        return e.offsetX != undefined ? e.offsetX : e.layerX;
-    }
-    function eventY(e) {
-        return e.offsetY != undefined ? e.offsetY : e.layerY;
     }
     canvas.mousedown(function(e) {
         drawing = true;
@@ -122,6 +213,12 @@ $(function() {
     })
     
     var menu = $('<div id="menu">');
+    
+    var header = $('<h1>Symmetry Paint</h1>')
+    menu.append(header);
+    
+    var github = $('<p id="github"><a href="https://github.com/ahihi/symmetrypaint">GitHub</a></p>')
+    menu.append(github);
     
     var symmetrySection = $('<section id="symmetry-section">');
     {
@@ -160,76 +257,35 @@ $(function() {
         symmetrySection.append(symmetryList);
     }
     menu.append(symmetrySection);
-    
-    var lineWidth = LINE_WIDTH_MIN;
+        
     var lineWidthSection = $('<section id="line-width-section">');
+    var lineWidthSlider;
     {
-        var lineWidthHeading = $("<h1>");
+        var lineWidthHeading = $("<h1>Line width:</h1>");
         lineWidthSection.append(lineWidthHeading);
         
-        var lineWidthCtl = $('<input type="range" id="line-width">');
-        lineWidthCtl.attr("min", LINE_WIDTH_MIN);
-        lineWidthCtl.attr("max", LINE_WIDTH_MAX);        
-        lineWidthCtl.attr("value", lineWidth);
-        lineWidthSection.append(lineWidthCtl);
-
-        function updateLineWidth() {
-            var newLineWidth = lineWidthCtl.attr("value");
-            if(/^\d+$/.test(newLineWidth)) {
-                lineWidth = Math.max(LINE_WIDTH_MIN, Math.min(LINE_WIDTH_MAX, parseInt(newLineWidth)));
-            }
-            lineWidthCtl.attr("value", lineWidth);
-            lineWidthHeading.text("Line width: " + lineWidth);
-        }
-        lineWidthCtl.change(function(e) {
-            updateLineWidth();
-        });
-        updateLineWidth();
-        
+        lineWidthSlider = slider(LINE_WIDTH_MIN, LINE_WIDTH_MAX, LINE_WIDTH_MIN);
+        lineWidthSection.append(lineWidthSlider.container);
     }
     menu.append(lineWidthSection);
     
     var colorSection = $('<section id="color-section">');
+    var colorSliders = rgbSliders(ctx);
     {
-        colorSection.append($("<h1>Color:</h1>"));
-        
-        var colorList = $("<ul>");
-        {
-            var blackLi = $("<li>");
-            {
-                var blackRadio = $('<input type="radio" id="color-black" name="color" value="black" checked>');
-                blackRadio.click(function() {
-                    setColor(true);
-                });
-                blackLi.append(blackRadio);
-                blackLi.append($('<label for="color-black">Black</label>'));
-            }
-            colorList.append(blackLi);
-            
-            var whiteLi = $("<li>");
-            {
-                var whiteRadio = $('<input type="radio" id="color-white" name="color" value="white">');
-                whiteRadio.click(function() {
-                    setColor(false);
-                });
-                whiteLi.append(whiteRadio);
-                whiteLi.append($('<label for="color-white">White</label>'));
-            }
-            colorList.append(whiteLi);
-        }
-        colorSection.append(colorList);
+        colorSection.append($("<h1>Color:</h1>"));        
+        colorSection.append(colorSliders.container);
     }
     menu.append(colorSection);
     
-    var clearSection = $('<section id="clear-section">');
+    var fillSection = $('<section id="fill-section">');
     {
-        var clearButton = $("<button>Clear</button>");
-        clearButton.click(function() {
-            clear();
+        var fillButton = $("<button>Fill</button>");
+        fillButton.click(function() {
+            fill();
         });
-        clearSection.append(clearButton);
+        fillSection.append(fillButton);
     }
-    menu.append(clearSection);
+    menu.append(fillSection);
     
     var body = $("body");
     body.append(canvas);

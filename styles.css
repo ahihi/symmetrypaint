@@ -1,6 +1,11 @@
 * {
     margin: 0;
     padding: 0;
+    font-family: "Helvetica", "Arial", sans-serif;
+}
+
+a {
+    color: #666;
 }
 
 ul {
@@ -8,7 +13,7 @@ ul {
 }
 
 body {
-    background-color: #CCC;
+    background-color: #BBB;
 }
 
 #canvas {
@@ -22,6 +27,15 @@ body {
     padding: 8px 8px 8px 0;
     font-family: Helvetica, sans-serif;
     font-size: 14px;
+}
+
+#menu > h1 {
+    font-size: 16px;
+}
+
+#github {
+    font-size: 12px;
+    margin-bottom: 16px;
 }
 
 #menu > section {
@@ -41,14 +55,60 @@ body {
     padding-left: 4px;
 }
 
-#menu > section#line-width-section > input[type=range] {
+.slider {
+    margin-bottom: 2px;
+}
+
+.slider:last-child {
+    margin-bottom: 0;
+}
+
+.slider > input[type=number] {
+    display: block;
+    float: left;
+    width: 3em;
+}
+
+.slider > input[type=range] {
+    margin-left: 4px;
+    float: left;
     width: 256px;
+}
+
+.slider:after {
+    display: block;
+    font-size: 0;
+    visibility: hidden;
+    height: 0;
+    content: " ";
+    clear: both;
+}
+
+.colorbox {
+    border: 1px solid black;
+    margin-right: 4px;
+    width: 4em;
+    height: 4em;
+    float: left;
+}
+
+.ranges {
+    float: left;
+}
+
+.sliders:after {
+    display: block;
+    font-size: 0;
+    visibility: hidden;
+    height: 0;
+    content: " ";
+    clear: both;
 }
 
 #menu > section#symmetry-section > ul > li > label > img {
     margin-right: 4px;
 }
 
-#menu > section#clear-section > button {
+#menu > section#fill-section > button {
     padding: 8px;
 }
