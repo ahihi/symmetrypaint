@@ -1,9 +1,16 @@
-function eventX(e) {
-    return e.offsetX != undefined ? e.offsetX : e.layerX;
-}
-
-function eventY(e) {
-    return e.offsetY != undefined ? e.offsetY : e.layerY;
+function makeEventXY(canvas) {
+    return {
+        "x": function(e) {
+            return e.offsetX != undefined
+                 ? e.offsetX
+                 : e.pageX - canvas.offset().left;
+        },
+        "y": function(e) {
+            return e.offsetY != undefined
+                 ? e.offsetY
+                 : e.pageY - canvas.offset().top;
+        }
+    };
 }
 
 function setColor(ctx, color) {
@@ -111,6 +118,8 @@ $(function() {
     var height = canvas.attr("height");
     var ctx = canvas[0].getContext("2d");
     
+    var coord = makeEventXY(canvas);
+    
     function fill() {
         ctx.fillRect(0, 0, width, height);
     }
@@ -198,14 +207,14 @@ $(function() {
     }
     canvas.mousedown(function(e) {
         drawing = true;
-        lastX = eventX(e);
-        lastY = eventY(e);
-        drawTo(eventX(e), eventY(e))
+        lastX = coord.x(canvas, e);
+        lastY = coord.y(canvas, e);
+        drawTo(coord.x(e), coord.y(e))
         e.preventDefault();
     });
     canvas.mousemove(function(e) {
         if(drawing) {
-            drawTo(eventX(e), eventY(e));
+            drawTo(coord.x(e), coord.y(e));
         }
     });
     $(window).mouseup(function(e) {
