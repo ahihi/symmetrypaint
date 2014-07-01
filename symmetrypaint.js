@@ -220,9 +220,9 @@ $(function() {
     $(window).mouseup(function(e) {
         drawing = false;
     })
-    
+            
     var menu = $('<div id="menu">');
-    
+        
     var header = $('<h1>Symmetry Paint</h1>')
     menu.append(header);
     
@@ -286,6 +286,30 @@ $(function() {
     }
     menu.append(colorSection);
     
+    var viewer = $('<div id="viewer">lulul</div');
+    var viewerImg = $('<img>');
+    
+    function showViewer() {
+        viewer.css("display", "block");
+    }
+    function hideViewer() {
+        viewer.css("display", "none");
+    }
+    
+    hideViewer();
+    viewer.click(function(e) {
+        if(e.target != viewerImg[0]) {
+            hideViewer();
+        }
+    });
+    $(document).keyup(function(e) {
+        if(e.keyCode == 27) {
+            hideViewer();
+        }
+    });
+    
+    viewer.append(viewerImg);
+    
     var fillSection = $('<section id="fill-section">');
     {
         var fillButton = $("<button>Fill</button>");
@@ -293,10 +317,18 @@ $(function() {
             fill();
         });
         fillSection.append(fillButton);
+        
+        var imgButton = $("<button>View as image</button>");
+        imgButton.click(function() {
+            viewerImg.attr("src", canvas[0].toDataURL());
+            showViewer();
+        });
+        fillSection.append(imgButton);
     }
     menu.append(fillSection);
-    
+        
     var body = $("body");
     body.append(canvas);
     body.append(menu);
+    body.append(viewer);
 });
